@@ -381,6 +381,16 @@ def save_pcm_as_wav(pcm_data: bytes, file_path: str, sample_rate: int = 24000, c
         wav_file.writeframes(pcm_data)
 
 async def openai_text_to_speech(prompt, output_path):
+    """Convert text to speech using OpenAI's TTS API."""
+    # Check if API key is available
+    if not OPENAI_API_KEY:
+        print("Error: OPENAI_API_KEY is not configured")
+        await send_message_to_clients(json.dumps({
+            "action": "error",
+            "message": "OpenAI API key not configured"
+        }))
+        return
+    
     file_extension = Path(output_path).suffix.lstrip('.').lower()
 
     voice_speed = float(os.getenv("VOICE_SPEED", "1.0"))
