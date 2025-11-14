@@ -23,9 +23,8 @@ from pydub import AudioSegment
 from .shared import clients, get_current_character
 
 import logging
-logging.getLogger("transformers").setLevel(logging.ERROR)  # transformers 4.48+ warning
+logging.getLogger("transformers").setLevel(logging.ERROR)
 
-# Load environment variables
 load_dotenv()
 
 MODEL_PROVIDER = os.getenv('MODEL_PROVIDER', 'openai')
@@ -54,7 +53,6 @@ VOICE_SPEED = os.getenv('VOICE_SPEED', '1.0')
 XTTS_NUM_CHARS = int(os.getenv('XTTS_NUM_CHARS', 255))
 os.environ["COQUI_TOS_AGREED"] = "1"
 
-# ANSI escape codes for colors
 PINK = '\033[95m'
 CYAN = '\033[96m'
 YELLOW = '\033[93m'
@@ -67,25 +65,16 @@ if OPENAI_API_KEY:
     OpenAI.api_key = OPENAI_API_KEY
 else:
     print(f"{YELLOW}OPENAI_API_KEY not set in .env file. OpenAI services disabled.{RESET_COLOR}")
-    # Set to None to ensure proper error handling when OpenAI services are attempted
     OpenAI.api_key = None
 
-# Capitalize the first letter of the character name
 character_display_name = CHARACTER_NAME.capitalize()
 
-# Check for CUDA availability
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-# Disable CuDNN explicitly - enable this if you get cudnn errors or change in xtts-v2/config.json
-# torch.backends.cudnn.enabled = False
-
-# Check if Faster Whisper should be loaded at startup
 FASTER_WHISPER_LOCAL = os.getenv("FASTER_WHISPER_LOCAL", "true").lower() == "true"
 
-# Initialize whisper model as None to lazy load
 whisper_model = None
 
-# Default model size (adjust as needed)
 model_size = "medium.en"
 
 if FASTER_WHISPER_LOCAL:
@@ -96,22 +85,18 @@ if FASTER_WHISPER_LOCAL:
     except Exception as e:
         print(f"Error initializing Faster-Whisper on {device}: {e}")
         print("Falling back to CPU mode...")
-
-        # Force CPU fallback
         device = "cpu"
-        model_size = "tiny.en"  # Use a smaller model for CPU performance
+        model_size = "tiny.en"
         whisper_model = WhisperModel(model_size, device="cpu", compute_type="int8")
         print("Faster-Whisper initialized on CPU successfully.")
 else:
     print("Faster-Whisper initialization skipped. Using OpenAI for transcription or load on demand.")
 
-# Paths for character-specific files
 project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 characters_folder = os.path.join(project_dir, 'characters', CHARACTER_NAME)
 character_prompt_file = os.path.join(characters_folder, f"{CHARACTER_NAME}.txt")
 character_audio_file = os.path.join(characters_folder, f"{CHARACTER_NAME}.wav")
 
-# Load XTTS configuration
 tts = None
 
 # Initialize TTS model with automatic downloading
@@ -120,11 +105,10 @@ if TTS_PROVIDER == 'xtts':
     try:
         tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2")
         print("Model downloaded, loading into memory...")
-        tts = tts.to(device)  # Move to device after download
+        tts = tts.to(device)
         
         num_chars = XTTS_NUM_CHARS
-        # Set the character limit
-        tts.synthesizer.tts_model.args.num_chars = num_chars  # default is 255 we are overriding it 
+        tts.synthesizer.tts_model.args.num_chars = num_chars
         
         print("XTTS model loaded successfully.")
     except Exception as e:
@@ -177,12 +161,12 @@ def init_set_tts(set_tts):
     if set_tts == 'xtts':
         print("Initializing XTTS model (may download on first run)...")
         try:
-            os.environ["COQUI_TOS_AGREED"] = "1"  # Auto-agree to terms
+            os.environ["COQUI_TOS_AGREED"] = "1"
             tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2")
             print("Model downloaded, loading into memory...")
             tts = tts.to(device)
             num_chars = XTTS_NUM_CHARS
-            tts.synthesizer.tts_model.args.num_chars = num_chars # default is 255 we are overriding it warning on cpu will take much longer
+            tts.synthesizer.tts_model.args.num_chars = num_chars
             print("XTTS model loaded successfully.")
             TTS_PROVIDER = set_tts
         except Exception as e:
@@ -203,7 +187,6 @@ def init_set_provider(set_provider):
     print(f"Switched to Model Provider: {set_provider}")
     
 
-# Function to display ElevenLabs quota
 def display_elevenlabs_quota():
     try:
         response = requests.get(
@@ -222,7 +205,6 @@ def display_elevenlabs_quota():
 if TTS_PROVIDER == "elevenlabs":
     display_elevenlabs_quota()
     
-# Function to open a file and return its contents as a string
 def open_file(filepath):
     with open(filepath, 'r', encoding='utf-8') as infile:
         return infile.read()
@@ -257,8 +239,6 @@ def sync_play_audio(file_path):
     p.terminate()
     print("Finished audio playback")
 
-    pass
-
 output_dir = os.path.join(project_dir, 'outputs')
 os.makedirs(output_dir, exist_ok=True)
 
@@ -270,30 +250,20 @@ print(f"{NEON_GREEN}Text-to-Speech provider: {TTS_PROVIDER}{RESET_COLOR}")
 print(f"To stop chatting say Quit or Exit. One moment please loading...")
 
 async def process_and_play(prompt, audio_file_pth):
-    # Always get the current character name to ensure we have the right audio file
     current_character = get_current_character()
     
-    # Update characters_folder path to point to the current character's folder
     current_characters_folder = os.path.join(project_dir, 'characters', current_character)
     
-    # Override the provided audio path with the current character's audio file
-    # This ensures we always use the correct character voice even after switching
     current_audio_file = os.path.join(current_characters_folder, f"{current_character}.wav")
     
-    # Fall back to the provided path if the current character file doesn't exist
-    # Could just point to one fallback .wav file for all characters but this works.
     if not os.path.exists(current_audio_file):
         current_audio_file = audio_file_pth
         print(f"Warning: Using fallback audio file as {current_audio_file} not found")
-    else:
-        # Using current character audio without printing to CLI
-        pass
-        
+    
     if TTS_PROVIDER == 'openai':
         output_path = os.path.join(output_dir, 'output.wav')
         try:
             await openai_text_to_speech(prompt, output_path)
-            # print(f"Generated audio file at: {output_path}")
             if os.path.exists(output_path):
                 print("Playing generated audio...")
                 await send_message_to_clients(json.dumps({"action": "ai_start_speaking"}))
@@ -314,7 +284,6 @@ async def process_and_play(prompt, audio_file_pth):
     elif TTS_PROVIDER == 'elevenlabs':
         output_path = os.path.join(output_dir, 'output.mp3')
         success = await elevenlabs_text_to_speech(prompt, output_path)
-        # Only attempt to play if TTS was successful
         if success and os.path.exists(output_path):
             print("Playing generated audio...")
             await send_message_to_clients(json.dumps({"action": "ai_start_speaking"}))
@@ -322,7 +291,6 @@ async def process_and_play(prompt, audio_file_pth):
             await send_message_to_clients(json.dumps({"action": "ai_stop_speaking"}))
         elif not success:
             print("Failed to generate ElevenLabs audio.")
-            # Error notifications are now handled in elevenlabs_text_to_speech
         else:
             print("Error: ElevenLabs audio file not found after generation.")
             await send_message_to_clients(json.dumps({
@@ -351,7 +319,7 @@ async def process_and_play(prompt, audio_file_pth):
                 wav = await asyncio.to_thread(
                 tts.tts,
                 text=prompt,
-                speaker_wav=current_audio_file,  # Use the updated current character audio
+                speaker_wav=current_audio_file,
                 language="en",
                 speed=float(os.getenv('VOICE_SPEED', '1.0'))
             )
@@ -382,12 +350,6 @@ async def process_and_play(prompt, audio_file_pth):
 
 
 async def send_message_to_clients(message):
-    """Send a message to all connected clients
-    
-    Args:
-        message: Either a string or a dictionary to send to clients
-    """
-    # Convert dictionary to JSON string if needed
     if isinstance(message, dict):
         message_str = json.dumps(message)
     else:
@@ -455,7 +417,6 @@ async def elevenlabs_text_to_speech(text, output_path):
     CHUNK_SIZE = 1024
     tts_url = f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_TTS_VOICE}/stream"
 
-    # Get global voice speed from environment (default to 1.0)
     voice_speed = os.getenv("VOICE_SPEED", "1.0")
 
     headers = {
@@ -478,8 +439,7 @@ async def elevenlabs_text_to_speech(text, output_path):
     try:
         async with aiohttp.ClientSession() as session:
             try:
-                # Increase timeout for longer content
-                timeout = aiohttp.ClientTimeout(total=60)  # 60 seconds timeout for larger audio files
+                timeout = aiohttp.ClientTimeout(total=60)
                 async with session.post(tts_url, headers=headers, json=data, timeout=timeout) as response:
                     if response.status == 200:
                         with open(output_path, "wb") as f:

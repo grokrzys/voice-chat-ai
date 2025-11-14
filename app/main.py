@@ -803,6 +803,8 @@ def signal_handler(sig, frame):
         print(f"Error during shutdown: {e}")
         import os
         os._exit(1)  # Error exit code
+        
+
 
 if __name__ == "__main__":
     # Register signal handlers
@@ -816,3 +818,4 @@ if __name__ == "__main__":
         print("\nServer stopped by keyboard interrupt.")
     finally:
         print("Shutdown complete.")
+        
