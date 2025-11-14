@@ -170,6 +170,11 @@ async def set_character(request: Request):
         if not character:
             return {"status": "error", "message": "Character name is required"}
         
+        # Validate that character exists
+        character_path = os.path.join(characters_folder, character)
+        if not os.path.exists(character_path):
+            return {"status": "error", "message": f"Character '{character}' not found"}
+        
         # Import the set_character function from app_logic
         from .app_logic import set_api_character
         from pydantic import BaseModel
