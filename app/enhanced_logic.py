@@ -481,22 +481,18 @@ async def enhanced_conversation_loop():
 
     try:
         # Keep context of the conversation
-        local_conversation_history = []
+        local_conversation_history = conversation_history.copy() if conversation_history and len(conversation_history) > 0 else []
         
-        # Check if there's any history to load - only load if there's actual content
-        if conversation_history and len(conversation_history) > 0:
-            local_conversation_history = conversation_history.copy()
-            
-            # Display the conversation history in the UI
-            for msg in local_conversation_history:
-                if msg["role"] == "user":
-                    await send_message_to_enhanced_clients({
-                        "message": f"You: {msg['content']}"
-                    })
-                elif msg["role"] == "assistant":
-                    await send_message_to_enhanced_clients({
-                        "message": msg['content']
-                    })
+        # Display the conversation history in the UI
+        for msg in local_conversation_history:
+            if msg["role"] == "user":
+                await send_message_to_enhanced_clients({
+                    "message": f"You: {msg['content']}"
+                })
+            elif msg["role"] == "assistant":
+                await send_message_to_enhanced_clients({
+                    "message": msg['content']
+                })
         
         character_name = get_character()
         character_prompt_file = os.path.join(characters_folder, character_name, f"{character_name}.txt")
@@ -638,7 +634,7 @@ async def enhanced_conversation_loop():
         # Always make sure to turn off the mic status indicator
         try:
             await send_message_to_enhanced_clients({"action": "mic", "status": "off"})
-        except:
+        except Exception:
             pass
         
         # Set active flag to False
@@ -658,7 +654,9 @@ async def enhanced_chat_completion(prompt, system_message, mood_prompt, conversa
             return "API key missing. Please set OPENAI_API_KEY in your environment."
         
         # Calculate token limit based on character limit Approximate token conversion, So if MAX_CHAR_LENGTH is 500, then 500 * 4 // 3 = 666 tokens
-        token_limit = min(4000, MAX_CHAR_LENGTH * 4 // 3)
+        # Ensure MAX_CHAR_LENGTH is positive to avoid invalid token limits
+        char_length = max(1, MAX_CHAR_LENGTH)
+        token_limit = min(4000, char_length * 4 // 3)
 
         # Use the selected model
         model = enhanced_model
