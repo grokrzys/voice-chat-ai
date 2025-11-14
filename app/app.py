@@ -688,7 +688,9 @@ def chatgpt_streamed(user_input, system_message, mood_prompt, conversation_histo
     print(f"Debug: streamed started. MODEL_PROVIDER: {MODEL_PROVIDER}")
 
     # Calculate token limit based on character limit Approximate token conversion, So if MAX_CHAR_LENGTH is 500, then 500 * 4 // 3 = 666 tokens
-    token_limit = min(4000, MAX_CHAR_LENGTH * 4 // 3)
+    # Ensure MAX_CHAR_LENGTH is positive to avoid invalid token limits
+    char_length = max(1, MAX_CHAR_LENGTH)
+    token_limit = min(4000, char_length * 4 // 3)
 
     if MODEL_PROVIDER == 'ollama':
         headers = {'Content-Type': 'application/json'}
