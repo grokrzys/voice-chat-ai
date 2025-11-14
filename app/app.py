@@ -417,6 +417,22 @@ async def openai_text_to_speech(prompt, output_path):
                 print(f"Error during OpenAI TTS: {e}")
 
 async def fetch_pcm_audio(model: str, voice: str, input_text: str, api_url: str, session: aiohttp.ClientSession) -> bytes:
+    """
+    Fetch PCM audio data from OpenAI TTS API.
+    
+    Args:
+        model (str): The TTS model to use
+        voice (str): The voice to use for speech synthesis
+        input_text (str): The text to convert to speech
+        api_url (str): The API endpoint URL
+        session (aiohttp.ClientSession): The aiohttp session for making requests
+        
+    Returns:
+        bytes: The PCM audio data
+        
+    Raises:
+        aiohttp.ClientError: If there's an error during the API request
+    """
     pcm_data = io.BytesIO()
     
     try:
@@ -1192,7 +1208,19 @@ async def generate_speech(text, temp_audio_path):
             print("XTTS model is not loaded.")
 
 async def kokoro_text_to_speech(text, output_path):
-    """Convert text to speech using Kokoro TTS API."""
+    """
+    Convert text to speech using Kokoro TTS API.
+    
+    Args:
+        text (str): The text to convert to speech
+        output_path (str): The file path where the audio will be saved
+        
+    Returns:
+        bool: True if successful, False otherwise
+        
+    Raises:
+        Exception: If there's an error during audio generation or API communication
+    """
     try:
         # Using direct aiohttp request
         kokoro_url = f"{KOKORO_BASE_URL}/audio/speech"
