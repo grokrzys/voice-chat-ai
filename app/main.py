@@ -187,7 +187,7 @@ async def set_character(request: Request):
 
 @app.post("/start_conversation")
 async def start_conversation_route():
-    Thread(target=lambda: asyncio.run(start_conversation())).start()
+    asyncio.create_task(start_conversation())
     return {"status": "started"}
 
 @app.post("/stop_conversation")
@@ -391,7 +391,7 @@ async def proxy_openai_realtime(request: Request):
         # Get the API key
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
-            return HTTPException(status_code=500, detail="OpenAI API key not configured")
+            raise HTTPException(status_code=500, detail="OpenAI API key not configured")
         
         # Get the SDP from the request body
         body = await request.body()
@@ -428,7 +428,7 @@ async def proxy_openai_realtime(request: Request):
     
     except Exception as e:
         logger.error(f"Error proxying to OpenAI: {e}")
-        return HTTPException(status_code=500, detail=f"Error proxying to OpenAI: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error proxying to OpenAI: {str(e)}")
 
 
 @app.websocket("/ws")
