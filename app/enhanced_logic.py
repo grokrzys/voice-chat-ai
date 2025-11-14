@@ -481,22 +481,18 @@ async def enhanced_conversation_loop():
 
     try:
         # Keep context of the conversation
-        local_conversation_history = []
+        local_conversation_history = conversation_history.copy() if conversation_history and len(conversation_history) > 0 else []
         
-        # Check if there's any history to load - only load if there's actual content
-        if conversation_history and len(conversation_history) > 0:
-            local_conversation_history = conversation_history.copy()
-            
-            # Display the conversation history in the UI
-            for msg in local_conversation_history:
-                if msg["role"] == "user":
-                    await send_message_to_enhanced_clients({
-                        "message": f"You: {msg['content']}"
-                    })
-                elif msg["role"] == "assistant":
-                    await send_message_to_enhanced_clients({
-                        "message": msg['content']
-                    })
+        # Display the conversation history in the UI
+        for msg in local_conversation_history:
+            if msg["role"] == "user":
+                await send_message_to_enhanced_clients({
+                    "message": f"You: {msg['content']}"
+                })
+            elif msg["role"] == "assistant":
+                await send_message_to_enhanced_clients({
+                    "message": msg['content']
+                })
         
         character_name = get_character()
         character_prompt_file = os.path.join(characters_folder, character_name, f"{character_name}.txt")
