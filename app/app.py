@@ -118,21 +118,33 @@ if TTS_PROVIDER == 'xtts':
 
 def init_ollama_model(model_name):
     global OLLAMA_MODEL
+    if not model_name or not isinstance(model_name, str) or model_name.strip() == "":
+        print("Error: Model name cannot be empty")
+        return
     OLLAMA_MODEL = model_name
     print(f"Switched to Ollama model: {model_name}")
 
 def init_openai_model(model_name):
     global OPENAI_MODEL
+    if not model_name or not isinstance(model_name, str) or model_name.strip() == "":
+        print("Error: Model name cannot be empty")
+        return
     OPENAI_MODEL = model_name
     print(f"Switched to OpenAI model: {model_name}")
     
 def init_xai_model(model_name):
     global XAI_MODEL
+    if not model_name or not isinstance(model_name, str) or model_name.strip() == "":
+        print("Error: Model name cannot be empty")
+        return
     XAI_MODEL = model_name
     print(f"Switched to XAI model: {model_name}")
 
 def init_anthropic_model(model_name):
     global ANTHROPIC_MODEL
+    if not model_name or not isinstance(model_name, str) or model_name.strip() == "":
+        print("Error: Model name cannot be empty")
+        return
     ANTHROPIC_MODEL = model_name
     print(f"Switched to Anthropic model: {model_name}")
 
