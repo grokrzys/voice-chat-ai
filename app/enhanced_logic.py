@@ -638,7 +638,7 @@ async def enhanced_conversation_loop():
         # Always make sure to turn off the mic status indicator
         try:
             await send_message_to_enhanced_clients({"action": "mic", "status": "off"})
-        except:
+        except Exception:
             pass
         
         # Set active flag to False
